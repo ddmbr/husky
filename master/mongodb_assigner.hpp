@@ -51,6 +51,7 @@ class MongoSplitAssigner {
     std::string username_;
 
     std::map<std::string, std::string> shards_map_;
+    std::map<std::string, std::vector<MongoDBSplit>> splits_map_;
     std::vector<MongoDBSplit> splits_;
     std::vector<MongoDBSplit> splits_end_;
 };
