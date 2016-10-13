@@ -86,7 +86,7 @@ void MongoSplitAssigner::master_setup_handler() {}
 MongoSplitAssigner::~MongoSplitAssigner() {
     shards_map_.clear();
     splits_.clear();
-    splits_end_.clear();
+    // splits_end_.clear();
 }
 
 void MongoSplitAssigner::set_auth(const std::string& username, const std::string& password) {
@@ -98,6 +98,7 @@ void MongoSplitAssigner::set_auth(const std::string& username, const std::string
 void MongoSplitAssigner::reset_auth() { need_auth_ = false; }
 
 void MongoSplitAssigner::create_splits() {
+    assert(splits_map_.find(server_) == splits_map_.end());
     mongo::DBClientConnection client;
     client.connect(server_, error_msg_);
 
@@ -129,23 +130,27 @@ void MongoSplitAssigner::create_splits() {
         split.set_max(o.getObjectField("max").jsonString());
 
         split.set_valid(true);
-        splits_.push_back(split);
+        // splits_.push_back(split);
+        splits_map_[server_].push_back(split);
     }
     split_num_ = splits_.size();
 }
 
 MongoDBSplit MongoSplitAssigner::answer(const std::string& server, const std::string& ns) {
-    if (server_ != server || ns_ != ns) {
-        server_ = server;
-        ns_ = ns;
+    // if (server_ != server || ns_ != ns) {
+    //     server_ = server;
+    //     ns_ = ns;
+    //     create_splits();
+    // }
+    if(splits_map_.find(server) == splits_map_.end())
         create_splits();
-    }
+    auto& splits_ = splits_map_[server];
 
     if (splits_.empty()) {
         if (end_count_ == split_num_) {
             end_count_ = 0;
-            splits_.swap(splits_end_);
-            splits_end_.clear();
+            // splits_.swap(splits_end_);
+            // splits_end_.clear();
         }
         return MongoDBSplit();
     }
@@ -160,7 +165,7 @@ void MongoSplitAssigner::recieve_end(MongoDBSplit& split) {
         return;
 
     end_count_++;
-    splits_end_.push_back(split);
+    // splits_end_.push_back(split);
 }
 
 }  // namespace husky
