@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-include_directories(${PROJECT_SOURCE_DIR} ${Boost_INCLUDE_DIRS} ${ZMQ_INCLUDE_DIR})
+include_directories(${PROJECT_SOURCE_DIR} ${Boost_INCLUDE_DIRS})
 
 if(LIBHDFS3_FOUND)
     include_directories(${LIBHDFS3_INCLUDE_DIR})

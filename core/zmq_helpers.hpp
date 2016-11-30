@@ -113,7 +113,7 @@ inline int32_t zmq_recv_int32(zmq::socket_t* socket) {
 inline int64_t zmq_recv_int64(zmq::socket_t* socket) {
     zmq::message_t msg;
     zmq_recv_common(socket, &msg);
-	return *reinterpret_cast<int64_t*>(msg.data());
+    return *reinterpret_cast<int64_t*>(msg.data());
 }
 
 inline std::string zmq_recv_string(zmq::socket_t* socket) {

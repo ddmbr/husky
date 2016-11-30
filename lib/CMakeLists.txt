@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-include_directories(${PROJECT_SOURCE_DIR} ${Boost_INCLUDE_DIRS} ${ZMQ_INCLUDE_DIR})
+include_directories(${PROJECT_SOURCE_DIR} ${Boost_INCLUDE_DIRS})
 
 add_library(aggregator-objs OBJECT
     aggregator.cpp
