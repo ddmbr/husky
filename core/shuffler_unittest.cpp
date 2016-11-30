@@ -23,7 +23,7 @@ class TestShuffler : public testing::Test {
 
 TEST_F(TestShuffler, Shuffler) {
     const int N = 4, Round = 2, MaxTime = 10;
-    unsigned int seed = time(NULL);
+    srand(time(NULL));
     std::vector<Shuffler<int>> V(N);
     std::vector<std::thread*> workers(N);
     std::atomic_int done(0);
@@ -34,11 +34,11 @@ TEST_F(TestShuffler, Shuffler) {
             Shuffler<int>& v = V[i];
             for (int round = 1, sum = 0; round <= Round; round++, sum = 0) {
                 v.storage() += i * round;
-                std::this_thread::sleep_for(std::chrono::milliseconds(rand_r(&seed) % MaxTime));
+                std::this_thread::sleep_for(std::chrono::milliseconds(rand() % MaxTime));
                 v.commit();
                 for (int j = 0; j < N; j++) {
                     sum += V[j].access();
-                    std::this_thread::sleep_for(std::chrono::milliseconds(rand_r(&seed) % MaxTime));
+                    std::this_thread::sleep_for(std::chrono::milliseconds(rand() % MaxTime));
                     V[j].leave();
                 }
                 EXPECT_EQ(sum << 1, N * (N - 1) * round);
@@ -61,7 +61,7 @@ TEST_F(TestShuffler, Shuffler) {
 
 TEST_F(TestShuffler, ShuffleCombiner) {
     const int N = 2, Round = 3, MaxTime = 10;
-    unsigned int seed = time(NULL);
+    srand(time(NULL));
     std::atomic_int done(0);
     std::vector<ShuffleCombiner<std::pair<int, int>>> V(N);
     std::vector<std::thread*> workers(N);
@@ -74,13 +74,13 @@ TEST_F(TestShuffler, ShuffleCombiner) {
                 for (int k = 0; k < N; k++) {
                     for (int m = 0; m < N; m++)
                         v.storage(k).push_back(std::make_pair((k * N + i + m) * round, 1));
-                    std::this_thread::sleep_for(std::chrono::milliseconds(rand_r(&seed) % MaxTime));
+                    std::this_thread::sleep_for(std::chrono::milliseconds(rand() % MaxTime));
                     v.commit(k);
                 }
                 std::vector<std::pair<int, int>> tmp;
                 for (int j = 0; j < N; j++) {
                     tmp.insert(tmp.end(), V[j].access(i).begin(), V[j].access(i).end());
-                    std::this_thread::sleep_for(std::chrono::milliseconds(rand_r(&seed) % MaxTime));
+                    std::this_thread::sleep_for(std::chrono::milliseconds(rand() % MaxTime));
                     V[j].leave(i);
                 }
                 for (auto& x : tmp)

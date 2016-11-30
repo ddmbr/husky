@@ -171,8 +171,7 @@ class PushCombinedChannel : public Source2ObjListChannel<DstObjT> {
             auto& self_buffer = (*shuffle_combiner_)[this->local_id_].access(i);
 
             // Collect messages (of the i-th buffer) from all machines
-            unsigned int seed = time(NULL);
-            int base = rand_r(&seed);
+            int base = rand();
             for (int j = 0; j < this->worker_info_->get_num_local_workers(); j++) {
                 if (j == this->local_id_)
                     continue;
