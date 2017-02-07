@@ -35,22 +35,32 @@ class ChannelStoreBase {
    public:
     // Create PushChannel
     template <typename MsgT, typename DstObjT>
-    static PushChannel<MsgT, DstObjT>& create_push_channel(ChannelSource& src_list, ObjList<DstObjT>& dst_list,
-                                                           const std::string& name = "") {
+    static auto* create_push_channel(ObjList<DstObjT>& dst_list, const std::string& name = "") {
         std::string channel_name = name.empty() ? channel_name_prefix + std::to_string(default_channel_id++) : name;
         if (channel_map.find(name) != channel_map.end())
             throw base::HuskyException("ChannelStoreBase::create_channel: Channel name already exists");
-        auto* push_channel = new PushChannel<MsgT, DstObjT>(&src_list, &dst_list);
+        auto* push_channel = new PushChannel<MsgT, DstObjT>();
         channel_map.insert({channel_name, push_channel});
-        return *push_channel;
+        return push_channel;
+    }
+
+    // Create PushChannel
+    template <typename MsgT, typename DstObjT>
+    static auto* create_push_combined_channel(const std::string& name = "") {
+        std::string channel_name = name.empty() ? channel_name_prefix + std::to_string(default_channel_id++) : name;
+        if (channel_map.find(name) != channel_map.end())
+            throw base::HuskyException("ChannelStoreBase::create_channel: Channel name already exists");
+        auto* push_channel = new PushChannel<MsgT, DstObjT>();
+        channel_map.insert({channel_name, push_channel});
+        return push_channel;
     }
 
     template <typename MsgT, typename DstObjT>
-    static PushChannel<MsgT, DstObjT>& get_push_channel(const std::string& name = "") {
+    static auto& get_push_channel(const std::string& name = "") {
         if (channel_map.find(name) == channel_map.end())
             throw base::HuskyException("ChannelStoreBase::get_channel: Channel name doesn't exist");
         auto* channel = channel_map[name];
-        return *dynamic_cast<PushChannel<MsgT, DstObjT>*>(channel);
+        return *static_cast<PushChannel<MsgT, DstObjT>*>(channel);
     }
 
     // Create PushCombinedChannel
