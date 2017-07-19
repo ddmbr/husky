@@ -17,6 +17,8 @@
 #include <set>
 #include <vector>
 
+#include "boost/functional/hash.hpp"
+
 #include "base/serialization.hpp"
 
 namespace husky {
@@ -38,7 +40,7 @@ class HashRing {
     int hash_lookup(const KeyT& key) const {
         // Maybe we just use std::hash<KeyT>() ??
         // uint64_t pos = ObjT::partition(key);
-        uint64_t pos = std::hash<KeyT>()(key);
+        uint64_t pos = boost::hash<KeyT>()(key);
         return lookup(pos);
     }
 
