@@ -14,13 +14,123 @@
 
 #pragma once
 
+#define EIGEN_MATRIXBASE_PLUGIN "lib/eigen_matrix_base_plugin.hpp"
+
 #include <algorithm>
 #include <cmath>
 #include <vector>
 
+#include "Eigen/Core"
+#include "Eigen/Dense"
+#include "Eigen/Sparse"
+
 #include "core/engine.hpp"
 
 namespace husky {
+namespace lib {
+
+using Eigen::VectorXd;
+using SparseVectorXd = Eigen::SparseVector<double>;
+
+template <typename _Scalar, int _Flags = 0, typename _StorageIndex = int>
+class InnerIterator;
+
+template <typename XprType, int, typename>
+class InnerIterator : public Eigen::InnerIterator<XprType> {
+   protected:
+    typedef typename Eigen::internal::traits<XprType>::Scalar Scalar;
+
+   public:
+    InnerIterator(const XprType& xpr, const Eigen::Index& outerId) : Eigen::InnerIterator<XprType>(xpr, outerId) {}
+    EIGEN_STRONG_INLINE Scalar& valueRef() { return this->m_eval.coeffRef(this->row(), this->col()); }
+};
+
+template <typename _Scalar, int _Flags, typename _StorageIndex>
+class InnerIterator<Eigen::SparseVector<_Scalar, _Flags, _StorageIndex>>
+    : public Eigen::SparseVector<_Scalar, _Flags, _StorageIndex>::InnerIterator {
+   protected:
+    typedef Eigen::SparseVector<_Scalar> XprType;
+
+   public:
+    InnerIterator(const XprType& xpr, const Eigen::Index& outerId)
+        : Eigen::SparseVector<_Scalar, _Flags, _StorageIndex>::InnerIterator(xpr, outerId) {}
+};
+
+template <typename T, typename U>
+struct LabeledPoint {
+    LabeledPoint() = default;
+    LabeledPoint(T& x, U& y) : x(x), y(y) {}
+    LabeledPoint(T&& x, U&& y) : x(std::move(x)), y(std::move(y)) {}
+
+    T x;
+    U y;
+
+    friend husky::BinStream& operator<<(husky::BinStream& stream, const LabeledPoint<T, U>& b) {
+        stream << b.x << b.y;
+        return stream;
+    }
+
+    friend husky::BinStream& operator>>(husky::BinStream& stream, LabeledPoint<T, U>& b) {
+        stream >> b.x >> b.y;
+        return stream;
+    }
+};
+
+}  // namespace lib
+
+namespace base {
+
+template <typename Scalar, int RowsAtCompileTime>
+inline BinStream& operator<<(BinStream& stream, const Eigen::Matrix<Scalar, RowsAtCompileTime, 1>& vec) {
+    stream << (size_t)vec.rows();
+
+    stream.push_back_bytes((const char*)vec.data(), vec.rows() * sizeof(Scalar));
+
+    return stream;
+}
+
+template <typename Scalar, int RowsAtCompileTime>
+inline BinStream& operator>>(BinStream& stream, Eigen::Matrix<Scalar, RowsAtCompileTime, 1>& vec) {
+    size_t rows;
+    stream >> rows;
+
+    vec.resize(rows);
+
+    Scalar* data = (Scalar*)stream.pop_front_bytes(rows * sizeof(Scalar));
+    std::copy(data, data + rows, vec.data());
+
+    return stream;
+}
+
+template <typename _Scalar, int _Flags, typename _StorageIndex>
+inline BinStream& operator<<(BinStream& stream, const Eigen::SparseVector<_Scalar, _Flags, _StorageIndex>& vec) {
+    stream << (size_t)vec.rows() << (size_t)vec.nonZeros();
+
+    stream.push_back_bytes((const char*)vec.innerIndexPtr(), vec.nonZeros() * sizeof(_StorageIndex));
+    stream.push_back_bytes((const char*)vec.valuePtr(), vec.nonZeros() * sizeof(_Scalar));
+
+    return stream;
+}
+
+template <typename _Scalar, int _Flags, typename _StorageIndex>
+inline BinStream& operator>>(BinStream& stream, Eigen::SparseVector<_Scalar, _Flags, _StorageIndex>& vec) {
+    size_t rows, non_zeros;
+    stream >> rows >> non_zeros;
+
+    vec.resize(rows);
+    vec.reserve(non_zeros);
+    vec.resizeNonZeros(non_zeros);
+
+    _StorageIndex* idxs = (_StorageIndex*)stream.pop_front_bytes(non_zeros * sizeof(_StorageIndex));
+    _Scalar* vals = (_Scalar*)stream.pop_front_bytes(non_zeros * sizeof(_Scalar));
+    std::copy(idxs, idxs + non_zeros, vec.innerIndexPtr());
+    std::copy(vals, vals + non_zeros, vec.valuePtr());
+
+    return stream;
+}
+
+}  // namespace base
+
 namespace lib {
 
 template <typename T, bool is_sparse>
@@ -447,26 +557,6 @@ template <typename T>
 inline SparseVector<T> operator*(T c, const SparseVector<T>& a) {
     return a * c;
 }
-
-template <typename T, typename U>
-struct LabeledPoint {
-    LabeledPoint() = default;
-    LabeledPoint(T& x, U& y) : x(x), y(y) {}
-    LabeledPoint(T&& x, U&& y) : x(std::move(x)), y(std::move(y)) {}
-
-    T x;
-    U y;
-
-    friend husky::BinStream& operator<<(husky::BinStream& stream, const LabeledPoint<T, U>& b) {
-        stream << b.x << b.y;
-        return stream;
-    }
-
-    friend husky::BinStream& operator>>(husky::BinStream& stream, LabeledPoint<T, U>& b) {
-        stream >> b.x >> b.y;
-        return stream;
-    }
-};
 
 #include "vector.tpp"
 
